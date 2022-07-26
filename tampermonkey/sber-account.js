@@ -6,6 +6,7 @@
 // @author       nailgun
 // @match        https://web2.online.sberbank.ru/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=sberbank.ru
+// @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js
 // @grant        GM_registerMenuCommand
 // @grant        GM_log
 // @grant        GM_setClipboard
@@ -44,7 +45,7 @@
                     date: date,
                     name: parts[parts.length-2],
                     currency: sumText[sumText.length-1],
-                    sum: parseSum(sumText.slice(0, -1).trim()),
+                    sum: PTA.parseSum(sumText.slice(0, -1).trim()),
                     sign: sign,
                 };
 
@@ -79,19 +80,19 @@
 
         let balanceText = document.querySelector('[data-testid="AccountSum"]').innerText;
         let balanceAccount = trsList.find(trs => trs.sign === '+').dst;
-        let balance = parseSum(balanceText.slice(0, -1).trim());
+        let balance = PTA.parseSum(balanceText.slice(0, -1).trim());
         trsList.push({
             date: parseDate('Сегодня'),
             name: '* sber reconcilation',
             currency: balanceText[balanceText.length-1],
-            sum: '=' + parseSum(balanceText.slice(0, -1).trim()),
+            sum: '=' + PTA.parseSum(balanceText.slice(0, -1).trim()),
             dst: balanceAccount,
             sign: '=',
         });
 
         GM_log(trsList);
 
-        let pta = trsList.map(trs => formatTrs(trs)).join('\n');
+        let pta = trsList.map(trs => PTA.formatTrs(trs)).join('\n');
         GM_log(pta);
         GM_setClipboard(pta);
         alert('PTA file copied to the clipboard');
@@ -132,18 +133,5 @@
         }
 
         return `${year}-${month}-${day}`;
-    }
-
-    function parseSum(text) {
-        return text.replace(/,/g, '.').replace(/\s/g, ',');
-    }
-
-    function formatTrs(trs) {
-        let text = `${trs.date} ${trs.name}`;
-        if (trs.src) {
-            text += `\n    ${trs.src}`;
-        }
-        text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${trs.sum}\n`;
-        return text;
     }
 })();
