@@ -20,6 +20,9 @@
                     sum += ' ' + trs.currency;
                 }
             }
+            if (trs.sign) {
+                sum = trs.sign + sum;
+            }
 	        text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${sum}\n`;
 	        return text;
     	},
