@@ -24,7 +24,8 @@
     GM_registerMenuCommand('PTA', generateReport);
 
     function generateReport() {
-        let acc = ASSET_PREFIX + getText(document.querySelector('.b-crd .crd_row'));
+        //let acc = ASSET_PREFIX + getText(document.querySelector('.b-crd .crd_row'));
+        let acc = 'assets:sber';
         let balance = parseBalance(acc);
         let trsList = parseTrsList(acc);
         trsList.reverse();
@@ -47,7 +48,7 @@
             //let acc = getText(trs.querySelector('.trs-card .trs_val'));
             let time = dateElm.childNodes[dateElm.childNodes.length-1].nodeValue.trim();
             let geo = getText(trs.querySelector('.trs-geo .trs_val'));
-            let authCode = getText(trs.querySelector('.trs-auth .trs_val'));
+            //let authCode = getText(trs.querySelector('.trs-auth .trs_val'));
             let postDate = getDate(trs.querySelector('.trs-post .trs_val .idate'));
 
             let myTrs = {
@@ -59,7 +60,7 @@
             };
 
             let isIncome = !!trs.querySelector('.trs_st-refill');
-            let postComment = `auth=${authCode} date:${postDate}`;
+            let postComment = `date:${postDate}`;
             if (isIncome) {
                 myTrs.dst = acc;
                 myTrs.dstComment = postComment;
