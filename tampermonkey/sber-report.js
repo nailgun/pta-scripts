@@ -19,12 +19,12 @@
 (async function() {
     'use strict';
 
-    const ASSET_PREFIX = 'assets:sber';
+    const ASSET_PREFIX = 'assets:sber:';
 
     GM_registerMenuCommand('PTA', generateReport);
 
     function generateReport() {
-        let acc = document.querySelector('.b-crd .crd_row').innerText;
+        let acc = getText(document.querySelector('.b-crd .crd_row'));
         let balance = parseBalance();
         let trsList = parseTrsList();
         trsList.reverse();
@@ -43,15 +43,15 @@
             let dateElm = trs.querySelector('.trs_date .idate');
             let sumElm = trs.querySelector('.isum');
             return {
-                name: trs.querySelector('.trs_name').innerText.trim(),
+                name: getText(trs.querySelector('.trs_name')),
                 date: getDate(dateElm),
                 time: getTime(dateElm),
                 sum: getSum(sumElm),
-                cat: trs.querySelector('.icat').innerText.trim().replace(/\s+/g, ' '),
-                authCode: trs.querySelector('.trs-auth .trs_val').innerText.trim().replace(/\s+/g, ' '),
+                cat: getText(trs.querySelector('.icat')),
+                authCode: getText(trs.querySelector('.trs-auth .trs_val')),
                 postDate: getDate(trs.querySelector('.trs-post .trs_val .idate')),
-                geo: trs.querySelector('.trs-geo .trs_val').innerText.trim().replace(/\s+/g, ' '),
-                account: trs.querySelector('.trs-card .trs_val').innerText.trim().replace(/\s+/g, ' '),
+                geo: getText(trs.querySelector('.trs-geo .trs_val')),
+                account: getText(trs.querySelector('.trs-card .trs_val')),
                 isIncome: !!trs.querySelector('.trs_st-refill'),
             };
         });
@@ -68,7 +68,7 @@
 
     function getSum(sumElm) {
         // TODO: currency
-        return PTA.parseSum(sumElm.innerText.trim());
+        return PTA.parseSum(getText(sumElm));
     }
 
     function generatePTA(trsList, acc) {
@@ -98,5 +98,9 @@
 
     function formatBalance(b, acc) {
         return `${b.date} * sber reconcilation\n    ${ASSET_PREFIX}${acc}  =${b.balance}\n`;
+    }
+
+    function getText(elm) {
+        return elm.textContent.trim().replace(/\s+/g, ' ');
     }
 })();
