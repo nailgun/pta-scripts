@@ -6,17 +6,18 @@
 // @author       nailgun
 // @match        https://web2.online.sberbank.ru/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=sberbank.ru
-// @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js
+// @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js?rev=7
 // @grant        GM_registerMenuCommand
 // @grant        GM_log
 // @grant        GM_setClipboard
 // ==/UserScript==
 
+/* global PTA */
+
 (function() {
     'use strict';
 
     const ASSETS_PREFIX = 'assets:';
-    const SUM_INDENT = 41;
 
     GM_registerMenuCommand('PTA', generateReport);
 
@@ -46,7 +47,6 @@
                     name: parts[parts.length-2],
                     currency: sumText[sumText.length-1],
                     sum: PTA.parseSum(sumText.slice(0, -1).trim()),
-                    sign: sign,
                 };
 
                 if (parts.length == 4) {
@@ -85,7 +85,7 @@
             date: parseDate('Сегодня'),
             name: '* sber reconcilation',
             currency: balanceText[balanceText.length-1],
-            sum: '=' + PTA.parseSum(balanceText.slice(0, -1).trim()),
+            sum: PTA.parseSum(balanceText.slice(0, -1).trim()),
             dst: balanceAccount,
             sign: '=',
         });
