@@ -29,11 +29,12 @@
         let balance = parseBalance(acc);
         let trsList = parseTrsList(acc);
         trsList.reverse();
-        trsList.splice(0, 0, balance.begin);
+        trsList = trsList.filter(trs => trs.date >= balance.begin.date); // exclude РАНЕЕ СОВЕРШЕННЫЕ ОПЕРАЦИИ (Операции повлияли на счёт в запрошенном периоде)
         trsList.push(balance.end);
         GM_log(trsList);
 
         let pta = trsList.map(trs => PTA.formatTrs(trs)).join('\n');
+        pta = `; import from sber report @ ${balance.end.date}\n\n` + pta;
         GM_log(pta);
         GM_setClipboard(pta);
         alert('PTA file copied to the clipboard');
