@@ -2,16 +2,16 @@
     const SUM_INDENT = 41;
 
     window.PTA = {
-    	parseSum: text => text.replace(/,/g, '.').replace(/\s/g, ','),
+        parseSum: text => text.replace(/,/g, '.').replace(/\s/g, ','),
 
-    	formatTrs: (trs) => {
-	        let text = `${trs.date} ${trs.name}`;
+        formatTrs: (trs) => {
+            let text = `${trs.date} ${trs.name}`;
             if (trs.time || trs.geo) {
                 text += `  ; ${trs.time} ${trs.geo}`;
             }
-	        if (trs.src) {
-	            text += `\n    ${trs.src}`;
-	        }
+            if (trs.src) {
+                text += `\n    ${trs.src}`;
+            }
             let sum = trs.sum;
             if (trs.currency && trs.currency !== '₽') {
                 if (trs.currency === '$' || trs.currency === '£') {
@@ -23,9 +23,9 @@
             if (trs.sign) {
                 sum = trs.sign + sum;
             }
-	        text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${sum}\n`;
-	        return text;
-    	},
+            text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${sum}\n`;
+            return text;
+        },
 
         parseDate: (text) => {
             let now = new Date();
