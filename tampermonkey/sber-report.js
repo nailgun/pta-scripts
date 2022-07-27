@@ -7,7 +7,7 @@
 // @match        https://report-vypiska.sberbank.ru/*
 // @updateURL    https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-report.js
 // @downloadURL  https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-report.js
-// @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js?rev=6
+// @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js?rev=7
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=sberbank.ru
 // @grant        GM_log
 // @grant        GM_setClipboard
@@ -24,36 +24,52 @@
     GM_registerMenuCommand('PTA', generateReport);
 
     function generateReport() {
-        let acc = getText(document.querySelector('.b-crd .crd_row'));
-        let balance = parseBalance();
-        let trsList = parseTrsList();
+        let acc = ASSET_PREFIX + getText(document.querySelector('.b-crd .crd_row'));
+        let balance = parseBalance(acc);
+        let trsList = parseTrsList(acc);
         trsList.reverse();
-
-        GM_log(balance);
+        trsList.splice(0, 0, balance.begin);
+        trsList.push(balance.end);
         GM_log(trsList);
-        let pta = [formatBalance(balance.begin, acc), generatePTA(trsList, acc), formatBalance(balance.end, acc)].join('\n');
+
+        let pta = trsList.map(trs => PTA.formatTrs(trs)).join('\n');
         GM_log(pta);
         GM_setClipboard(pta);
         alert('PTA file copied to the clipboard');
     }
 
-    function parseTrsList() {
+    function parseTrsList(acc) {
         let trsList = document.querySelectorAll('.b-trs .trs_it');
         return [...trsList].map(trs => {
             let dateElm = trs.querySelector('.trs_date .idate');
             let sumElm = trs.querySelector('.isum');
-            return {
+
+            //let acc = getText(trs.querySelector('.trs-card .trs_val'));
+            let time = dateElm.childNodes[dateElm.childNodes.length-1].nodeValue.trim();
+            let geo = getText(trs.querySelector('.trs-geo .trs_val'));
+            let authCode = getText(trs.querySelector('.trs-auth .trs_val'));
+            let postDate = getDate(trs.querySelector('.trs-post .trs_val .idate'));
+
+            let myTrs = {
                 name: getText(trs.querySelector('.trs_name')),
                 date: getDate(dateElm),
-                time: getTime(dateElm),
                 sum: getSum(sumElm),
-                cat: getText(trs.querySelector('.icat')),
-                authCode: getText(trs.querySelector('.trs-auth .trs_val')),
-                postDate: getDate(trs.querySelector('.trs-post .trs_val .idate')),
-                geo: getText(trs.querySelector('.trs-geo .trs_val')),
-                account: getText(trs.querySelector('.trs-card .trs_val')),
-                isIncome: !!trs.querySelector('.trs_st-refill'),
+                category: getText(trs.querySelector('.icat')),
+                comment: `${time} ${geo}`,
             };
+
+            let isIncome = !!trs.querySelector('.trs_st-refill');
+            let postComment = `auth=${authCode} date:${postDate}`;
+            if (isIncome) {
+                myTrs.dst = acc;
+                myTrs.dstComment = postComment;
+                myTrs.src = `income:${myTrs.category}`;
+            } else {
+                myTrs.dst = `expenses:${myTrs.category}`;
+                myTrs.src = acc;
+                myTrs.srcComment = postComment;
+            }
+            return myTrs;
         });
     }
 
@@ -62,31 +78,21 @@
         return `${match[3]}-${match[2]}-${match[1]}`;
     }
 
-    function getTime (dateElm) {
-        return dateElm.childNodes[dateElm.childNodes.length-1].nodeValue.trim();
-    }
-
     function getSum(sumElm) {
         // TODO: currency
         return PTA.parseSum(getText(sumElm));
     }
 
-    function generatePTA(trsList, acc) {
-        return trsList.map(trs => {
-            let trsHeader = `${trs.date} ${trs.name}  ; ${trs.time} ${trs.geo}`;
-            let assetPosting = `${ASSET_PREFIX}${acc}  ${trs.isIncome ? '' : '-'}${trs.sum}; auth=${trs.authCode} date:${trs.postDate}`;
-            let secondPosting = trs.isIncome ? `income:${trs.cat}` : `expenses:${trs.cat}`;
-            return `${trsHeader}\n    ${assetPosting}\n    ${secondPosting}\n`;
-        }).join('\n');
-    }
-
-    function parseBalance() {
+    function parseBalance(acc) {
         let [beginElm, endElm] = document.querySelectorAll('.b-balance .state_row');
 
         function parseElm(elm) {
             return {
                 date: getDate(elm.querySelector('.state_key .idate')),
-                balance: getSum(elm.querySelector('.state_val .isum')),
+                name: '* alfa reconcilation',
+                sum: getSum(elm.querySelector('.state_val .isum')),
+                dst: acc,
+                sign: '=',
             };
         }
 
@@ -94,10 +100,6 @@
             begin: parseElm(beginElm),
             end: parseElm(endElm),
         }
-    }
-
-    function formatBalance(b, acc) {
-        return `${b.date} * sber reconcilation\n    ${ASSET_PREFIX}${acc}  =${b.balance}\n`;
     }
 
     function getText(elm) {
