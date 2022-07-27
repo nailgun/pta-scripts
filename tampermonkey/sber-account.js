@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Sberbank Online Account History to PTA
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      1
 // @description  Generates PTA file from Sberbank Online Account History
 // @author       nailgun
 // @match        https://web2.online.sberbank.ru/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=sberbank.ru
+// @updateURL    https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-account.js
 // @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js?rev=7
 // @grant        GM_registerMenuCommand
 // @grant        GM_log
