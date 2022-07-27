@@ -89,7 +89,7 @@
         function parseElm(elm) {
             return {
                 date: getDate(elm.querySelector('.state_key .idate')),
-                name: '* alfa reconcilation',
+                name: '* sber reconcilation',
                 sum: getSum(elm.querySelector('.state_val .isum')),
                 dst: acc,
                 sign: '=',
