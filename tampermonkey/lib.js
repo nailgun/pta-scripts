@@ -55,7 +55,7 @@
                 throw new Error('Invalid date: ' + text);
             }
 
-            return new Date(now.getFullYear(), MONTH_MAP[match[2]], match[1]);
+            return new Date(now.getFullYear(), MONTH_MAP[match[2]] - 1, match[1]);
         },
 
         formatDate: (date) => {
