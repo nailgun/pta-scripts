@@ -6,11 +6,14 @@
 
         formatTrs: (trs) => {
             let text = `${trs.date} ${trs.name}`;
-            if (trs.time || trs.geo) {
-                text += `  ; ${trs.time} ${trs.geo}`;
+            if (trs.comment) {
+                text += '  ; ' + trs.comment;
             }
             if (trs.src) {
                 text += `\n    ${trs.src}`;
+                if (trs.srcComment) {
+                    text += '  ; ' + trs.srcComment;
+                }
             }
             let sum = trs.sum;
             if (trs.currency && trs.currency !== '₽') {
@@ -23,7 +26,11 @@
             if (trs.sign) {
                 sum = trs.sign + sum;
             }
-            text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${sum}\n`;
+            text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${sum}`;
+            if (trs.dstComment) {
+                text += '  ; ' + trs.dstComment;
+            }
+            text += '\n';
             return text;
         },
 
