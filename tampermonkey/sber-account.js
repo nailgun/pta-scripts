@@ -7,6 +7,7 @@
 // @match        https://web2.online.sberbank.ru/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=sberbank.ru
 // @updateURL    https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-account.js
+// @downloadURL  https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-account.js
 // @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js?rev=7
 // @grant        GM_registerMenuCommand
 // @grant        GM_log
