@@ -12,7 +12,15 @@
 	        if (trs.src) {
 	            text += `\n    ${trs.src}`;
 	        }
-	        text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${trs.sum}\n`;
+            let sum = trs.sum;
+            if (trs.currency && trs.currency !== '₽') {
+                if (trs.currency === '$' || trs.currency === '£') {
+                    sum = trs.currency + sum;
+                } else {
+                    sum += ' ' + trs.currency;
+                }
+            }
+	        text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${sum}\n`;
 	        return text;
     	},
 
