@@ -56,7 +56,7 @@
                         trs.dst = acc;
                     } else {
                         trs.src = acc;
-                        trs.dedstst = 'expense:other';
+                        trs.dst = 'expense:other';
                     }
                 } else if (parts.length == 6) {
                     let acc1 = ASSETS_PREFIX + parts.slice(0, 2).join(' ');
