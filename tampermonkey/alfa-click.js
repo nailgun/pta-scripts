@@ -55,7 +55,7 @@
                     trs.dst = acc;
                 } else {
                     trs.src = acc;
-                    trs.dst = `expense:${trs.category}`;
+                    trs.dst = `expenses:${trs.category}`;
                 }
 
                 return trs;
