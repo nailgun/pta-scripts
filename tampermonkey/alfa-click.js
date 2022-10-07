@@ -24,8 +24,8 @@
     GM_registerMenuCommand('PTA', generateReport);
 
     function generateReport() {
-        //let acc = ASSETS_PREFIX + document.querySelector('[data-test-id="account-number"]').innerText;
-        let accName = document.querySelector('[data-test-id="account-name-initial-editable-value"]').innerText;
+        //let accName = ASSETS_PREFIX + document.querySelector('[data-test-id="account-number"]').innerText;
+        let accName = document.querySelector('[data-test-id="account-name"]').innerText;
         let acc = ASSETS_PREFIX;
         if (['RUB', 'USD', 'EUR', 'GBP'].indexOf(accName) == -1) {
             acc = `${ASSETS_PREFIX}:${accName}`;
