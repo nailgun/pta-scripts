@@ -5,6 +5,7 @@
 // @description  Generates PTA file from Sberbank Online Account History
 // @author       nailgun
 // @match        https://web2.online.sberbank.ru/*
+// @match        https://web2-new.online.sberbank.ru/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=sberbank.ru
 // @updateURL    https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-account.js
 // @downloadURL  https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-account.js
@@ -49,6 +50,7 @@
                     name: parts[parts.length-2],
                     currency: sumText[sumText.length-1],
                     sum: PTA.parseSum(sumText.slice(0, -1).trim()),
+                    sign: sign,
                 };
 
                 if (parts.length == 4) {
@@ -60,6 +62,8 @@
                         trs.src = acc;
                         trs.dst = 'expenses:other';
                     }
+                } else if (parts.length == 5 && parts[3] == 'Заявка отклонена банком') {
+                    return null;
                 } else if (parts.length == 6) {
                     let acc1 = ASSETS_PREFIX + parts.slice(0, 2).join(' ');
                     let acc2 = ASSETS_PREFIX + parts.slice(2, 4).join(' ');
@@ -75,8 +79,10 @@
                 }
 
                 return trs;
-            });
+            }).filter(trs => !!trs);
         }).flat();
+
+        console.log(trsList);
 
         trsList.reverse();
 
@@ -108,6 +114,12 @@
             day = now.getDate().toString().padStart(2, '0');
             month = (now.getMonth() + 1).toString().padStart(2, '0');
             year = now.getFullYear();
+        } else if (text === 'Вчера') {
+            let yesterday = new Date();
+            yesterday.setDate(now.getDate() - 1);
+            day = yesterday.getDate().toString().padStart(2, '0');
+            month = (yesterday.getMonth() + 1).toString().padStart(2, '0');
+            year = yesterday.getFullYear();
         } else {
             const MONTH_MAP = {
                 'января': 1,
