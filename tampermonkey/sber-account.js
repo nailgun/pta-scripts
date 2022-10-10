@@ -55,11 +55,14 @@
 
                 if (parts.length == 4) {
                     let acc = ASSETS_PREFIX + parts.slice(0, 2).join(' ');
-                    if (sign == '+') {
+                    if (parts[2] == 'Перевод клиенту Сбербанка') {
+                        trs.src = null;
+                        trs.dst = 'expenses:other';
+                    } else if (sign == '+') {
                         trs.src = 'income:interest';
-                        trs.dst = acc;
+                        trs.dst = cleanAccountName(acc);
                     } else {
-                        trs.src = acc;
+                        trs.src = cleanAccountName(acc);
                         trs.dst = 'expenses:other';
                     }
                 } else if (parts.length == 5 && parts[3] == 'Заявка отклонена банком') {
@@ -68,11 +71,11 @@
                     let acc1 = ASSETS_PREFIX + parts.slice(0, 2).join(' ');
                     let acc2 = ASSETS_PREFIX + parts.slice(2, 4).join(' ');
                     if (sign == '+') {
-                        trs.src = acc1;
-                        trs.dst = acc2;
+                        trs.src = cleanAccountName(acc1);
+                        trs.dst = cleanAccountName(acc2);
                     } else {
-                        trs.src = acc2;
-                        trs.dst = acc1;
+                        trs.src = cleanAccountName(acc2);
+                        trs.dst = cleanAccountName(acc1);
                     }
                 } else {
                     throw new Error('Unknown operation: ' + parts);
@@ -89,18 +92,25 @@
         let balanceText = document.querySelector('[data-testid="AccountSum"]').innerText;
         let balanceAccount = trsList.find(trs => trs.sign === '+').dst;
         let balance = PTA.parseSum(balanceText.slice(0, -1).trim());
+        let today = parseDate('Сегодня');
         trsList.push({
-            date: parseDate('Сегодня'),
+            date: today,
             name: '* sber reconcilation',
             currency: balanceText[balanceText.length-1],
             sum: PTA.parseSum(balanceText.slice(0, -1).trim()),
             dst: balanceAccount,
             sign: '=',
         });
+        trsList.forEach(trs => {
+            if (trs.src == null && trs.sign != '=') {
+                trs.src = balanceAccount;
+            }
+        });
 
         GM_log(trsList);
 
         let pta = trsList.map(trs => PTA.formatTrs(trs)).join('\n');
+        pta = `; import from sber history @ ${today}\n\n` + pta;
         GM_log(pta);
         GM_setClipboard(pta);
         alert('PTA file copied to the clipboard');
@@ -147,5 +157,9 @@
         }
 
         return `${year}-${month}-${day}`;
+    }
+
+    function cleanAccountName(name) {
+        return name.replace('счёт', 'счет');
     }
 })();
