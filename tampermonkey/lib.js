@@ -33,7 +33,7 @@
                 delete trs.sum;
             }
 
-            for (let [acc, sum] in trs.src) {
+            for (let [acc, sum] of trs.src) {
                 if (sum) {
                     sum = formatSum(sum);
                     text += `\n    ${acc}  `.padEnd(SUM_INDENT, ' ') + `${sum}`;
@@ -42,7 +42,7 @@
                 }
             }
 
-            for (let [acc, sum] in trs.dst) {
+            for (let [acc, sum] of trs.dst) {
                 if (sum) {
                     sum = formatSum(sum);
                     if (trs.sign) {
