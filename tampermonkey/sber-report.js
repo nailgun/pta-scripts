@@ -89,10 +89,11 @@
         let [beginElm, endElm] = document.querySelectorAll('.b-balance .state_row');
 
         function parseElm(elm) {
+            let sum = elm.querySelector('.state_val .isum');
             return {
                 date: getDate(elm.querySelector('.state_key .idate')),
                 name: '* sber reconcilation',
-                sum: getSum(elm.querySelector('.state_val .isum')),
+                sum: sum ? getSum(sum) : 0,
                 dst: acc,
                 sign: '=',
             };
