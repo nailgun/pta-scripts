@@ -59,40 +59,45 @@
                     text += `\n    ${acc}`;
                 }
             }
-            
+
             text += '\n';
             return text;
         },
 
         parseDate: (text) => {
-            let now = new Date();
+            let date = new Date();
             text = text.toLowerCase();
 
             if (text === 'сегодня') {
-                return now;
+            } else if (text === 'вчера') {
+                date.setDate(date.getDate() - 1);
+            } else if (text === 'позавчера') {
+                date.setDate(date.getDate() - 2);
+            } else {
+                const MONTH_MAP = {
+                    'января': 1,
+                    'февраля': 2,
+                    'марта': 3,
+                    'апреля': 4,
+                    'мая': 5,
+                    'июня': 6,
+                    'июля': 7,
+                    'августа': 8,
+                    'сентября': 9,
+                    'октября': 10,
+                    'ноября': 11,
+                    'декабря': 12,
+                };
+
+                let match = /^(\d+)\s+(.+),?/.exec(text);
+                if (!match) {
+                    throw new Error('Invalid date: ' + text);
+                }
+
+                date = new Date(date.getFullYear(), MONTH_MAP[match[2]] - 1, parseInt(match[1]));
             }
 
-            const MONTH_MAP = {
-                'января': 1,
-                'февраля': 2,
-                'марта': 3,
-                'апреля': 4,
-                'мая': 5,
-                'июня': 6,
-                'июля': 7,
-                'августа': 8,
-                'сентября': 9,
-                'октября': 10,
-                'ноября': 11,
-                'декабря': 12,
-            };
-
-            let match = /^(\d+)\s+(.+)$/.exec(text);
-            if (!match) {
-                throw new Error('Invalid date: ' + text);
-            }
-
-            return new Date(now.getFullYear(), MONTH_MAP[match[2]] - 1, match[1]);
+            return date;
         },
 
         formatDate: (date) => {
