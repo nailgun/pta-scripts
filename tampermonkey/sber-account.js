@@ -9,7 +9,7 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=sberbank.ru
 // @updateURL    https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-account.js
 // @downloadURL  https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/sber-account.js
-// @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js?rev=7
+// @require      https://raw.githubusercontent.com/nailgun/pta-scripts/master/tampermonkey/lib.js?rev=15
 // @grant        GM_registerMenuCommand
 // @grant        GM_log
 // @grant        GM_setClipboard
@@ -25,6 +25,12 @@
     GM_registerMenuCommand('PTA', generateReport);
 
     function generateReport() {
+        const reconcilationTrs = makeReconcilationTrs();
+        if (reconcilationTrs.dst == ASSETS_PREFIX + 'Личный •• 3420') {
+            reconcilationTrs.dst = ASSETS_PREFIX + 'sber';
+        }
+        //makeReconcilationTrs.dst = prompt('Enter account name:', reconcilationTrs.dst);
+
         let opListElm = document.querySelector('[data-unit="OperationsList"]');
         if (!opListElm) {
             alert('OperationsList not found');
@@ -33,108 +39,150 @@
 
         let sections = document.querySelectorAll('[data-unit="OperationsList"] > section');
         let trsList = [...sections].map(section => {
-            let date = parseDate(section.querySelector('[data-unit="Date"]').innerText);
+            let date = PTA.formatDate(PTA.parseDate(section.querySelector('[data-unit="Date"]').innerText));
             let trsElmList = section.querySelectorAll('a[mode="full"]');
             return [...trsElmList].map(op => {
-                let parts = op.innerText.split('\n\n');
-                let sumText = parts[parts.length-1];
-                let sign = sumText[0];
-                if (sign === '+' || sign === '-') {
-                    sumText = sumText.slice(1);
+                let elems = op.querySelectorAll('p');
+                let parts = [...elems].map(part => part.innerText);
+
+                if (parts.length == 3) {
+                    return makeSimpleTrs(parts, date, reconcilationTrs.dst);
+                } else if (parts.length == 4 && /^комиссия:/i.test(parts[3])) {
+                    return makeTrsWithFee(parts, date, reconcilationTrs.dst);
+                } else if (parts.length == 6 && /^между своими счетами$/i.test(parts[5])) {
+                    return makeTransferTrs(parts, date, reconcilationTrs.dst);
                 } else {
-                    sign = '+';
+                    throw new Error('Unknown operation: ' + op.innerText);
                 }
-
-                let trs = {
-                    date: date,
-                    name: parts[parts.length-2],
-                    currency: sumText[sumText.length-1],
-                    sum: PTA.parseSum(sumText.slice(0, -1).trim()),
-                    sign: sign,
-                };
-
-                if (parts.length == 3 && parts[2].startsWith('Заказ отчета')) {
-                    return null;
-                } else if (parts.length == 3 && parts[2] == 'Клиенту Сбербанка') {
-                    trs.src = null;
-                    trs.dst = 'expenses:' + parts[0];
-                } else if (parts.length == 4) {
-                    let acc = ASSETS_PREFIX + parts.slice(0, 2).join(' ');
-                    if (parts[2] == 'Перевод клиенту Сбербанка') {
-                        trs.src = null;
-                        trs.dst = 'expenses:other';
-                    } else if (sign == '+') {
-                        trs.src = 'income:interest';
-                        trs.dst = cleanAccountName(acc);
-                    } else {
-                        trs.src = cleanAccountName(acc);
-                        trs.dst = 'expenses:other';
-                    }
-                } else if (parts.length == 5 && parts[3] == 'Заявка отклонена банком') {
-                    return null;
-                } else if (parts.length == 6) {
-                    let acc1 = ASSETS_PREFIX + parts.slice(0, 2).join(' ');
-                    let acc2 = ASSETS_PREFIX + parts.slice(2, 4).join(' ');
-                    if (sign == '+') {
-                        trs.src = cleanAccountName(acc1);
-                        trs.dst = cleanAccountName(acc2);
-                    } else {
-                        trs.src = cleanAccountName(acc2);
-                        trs.dst = cleanAccountName(acc1);
-                    }
-                } else {
-                    throw new Error('Unknown operation: ' + parts);
-                }
-
-                return trs;
-            }).filter(trs => !!trs);
+            });
         }).flat();
 
-        console.log(trsList);
-
         trsList.reverse();
-
-        let balanceText = document.querySelector('[data-testid="AccountSum"]').innerText;
-        let balanceAccount = trsList.find(trs => trs.sign === '+').dst;
-        let balance = PTA.parseSum(balanceText.slice(0, -1).trim());
-        let today = parseDate('Сегодня');
-        trsList.push({
-            date: today,
-            name: '* sber reconcilation',
-            currency: balanceText[balanceText.length-1],
-            sum: PTA.parseSum(balanceText.slice(0, -1).trim()),
-            dst: balanceAccount,
-            sign: '=',
-        });
-        trsList.forEach(trs => {
-            if (trs.src == null && trs.sign != '=') {
-                trs.src = balanceAccount;
-            }
-        });
-
+        trsList.push(reconcilationTrs);
         GM_log(trsList);
 
         let pta = trsList.map(trs => PTA.formatTrs(trs)).join('\n');
-        pta = `; import from sber history @ ${today}\n\n` + pta;
+        pta = `; import from sber history @ ${reconcilationTrs.date}\n\n` + pta;
         GM_log(pta);
         GM_setClipboard(pta);
         alert('PTA file copied to the clipboard');
     }
 
-    function parseDate(text) {
-        let now = new Date();
-        let day, month, year;
+    function makeSimpleTrs(parts, date, accountName) {
+        let sumText = parts[1];
+        let sign = sumText[0];
+        if (sign === '+' || sign === '-') {
+            sumText = sumText.slice(1);
+        } else {
+            sign = '-';
+        }
 
-        if (text === 'Сегодня') {
-            day = now.getDate().toString().padStart(2, '0');
-            month = (now.getMonth() + 1).toString().padStart(2, '0');
-            year = now.getFullYear();
-        } else if (text === 'Вчера') {
-            let yesterday = new Date();
-            yesterday.setDate(now.getDate() - 1);
-            day = yesterday.getDate().toString().padStart(2, '0');
-            month = (yesterday.getMonth() + 1).toString().padStart(2, '0');
-            year = yesterday.getFullYear();
+        let trs = {
+            date: date,
+            name: parts[0],
+            currency: sumText[sumText.length-1],
+            sum: PTA.parseSum(sumText.slice(0, -1).trim()),
+        };
+
+        if (sign === '-') {
+            trs.src = accountName;
+            trs.dst = 'expenses:' + standartizeExpensesAccount(parts[2]);
+        } else {
+            trs.src = 'income:' + parts[2];
+            trs.dst = accountName;
+        }
+
+        return trs;
+    }
+
+    function makeTrsWithFee(parts, date, accountName) {
+        let trs = makeSimpleTrs(parts, date, accountName);
+
+        let match = /^комиссия:\s*(.*)\s+(.*)\s*$/i.exec(parts[3]);
+        if (!match) {
+            throw new Error('Invalid fee format');
+        }
+
+        let feeSum = PTA.parseSum(match[1]);
+        let feeCurrency = match[2];
+
+        if (feeCurrency != trs.currency) {
+            throw new Error('Fee currency mistmatch');
+        }
+
+        trs.src = [[accountName, null]];
+        trs.dst = [
+            [trs.dst, trs.sum],
+            ['expenses:bankfee', feeSum],
+        ];
+        delete trs.sum;
+
+        return trs;
+    }
+
+    function makeTransferTrs(parts, date, accountName) {
+        let sumText = parts[2];
+        let sign = sumText[0];
+        if (sign === '+' || sign === '-') {
+            sumText = sumText.slice(1);
+        } else {
+            sign = '-';
+        }
+
+        let trs = {
+            date: date,
+            name: parts[5],
+            currency: sumText[sumText.length-1],
+            sum: PTA.parseSum(sumText.slice(0, -1).trim()),
+            src: ASSETS_PREFIX + `${parts[0]} ${parts[1]}`,
+            dst: ASSETS_PREFIX + `${parts[3]} ${parts[4]}`,
+        };
+
+        if (sign == '+') {
+            trs.dst = accountName;
+        } else {
+            trs.src = accountName;
+        }
+
+        return trs;
+    }
+
+    function makeReconcilationTrs() {
+        if (document.location.pathname != '/operations') {
+            throw new Error('Invalid document location');
+        }
+
+        let match = /^\?usedResource=ct-account(%3A|:)([^&]+)/.exec(document.location.search);
+        if (!match) {
+            throw new Error('Invalid operations filter');
+        }
+
+        let accountId = match[2];
+        let accountLink = document.querySelector(`a[class^="region-products-cards-"][href$="/${accountId}"]`);
+        if (!accountLink) {
+            throw new Error('Cant find active account');
+        }
+
+        let parts = accountLink.innerText.split('\n');
+        return {
+            date: formatDate(new Date()),
+            name: '* sber reconcilation',
+            currency: parts[2],
+            sum: PTA.parseSum(parts[0].trim()),
+            dst: ASSETS_PREFIX + `${parts[3]} ${parts[4]}`,
+            sign: '=',
+        };
+    }
+
+    function parseDate(text) {
+        let date = new Date();
+        text = text.toLowerCase();
+
+        if (text === 'сегодня') {
+        } else if (text === 'вчера') {
+            date.setDate(date.getDate() - 1);
+        } else if (text === 'позавчера') {
+            date.setDate(date.getDate() - 2);
         } else {
             const MONTH_MAP = {
                 'января': 1,
@@ -156,15 +204,31 @@
                 return text;
             }
 
-            day = match[1].padStart(2, '0');
-            month = MONTH_MAP[match[2]].toString().padStart(2, '0');
-            year = now.getFullYear();
+            date = new Date(date.getFullYear(), MONTH_MAP[match[2]] - 1, parseInt(match[1]));
         }
 
+        return formatDate(date);
+    }
+
+    function formatDate(date) {
+        let day = date.getDate().toString().padStart(2, '0');
+        let month = (date.getMonth() + 1).toString().padStart(2, '0');
+        let year = date.getFullYear();
         return `${year}-${month}-${day}`;
     }
 
-    function cleanAccountName(name) {
-        return name.replace('счёт', 'счет');
+    function standartizeExpensesAccount(name) {
+        switch (name) {
+            case 'Клиенту Сбербанка':
+                return 'TRANSFER';
+            case 'Оплата товаров и услуг':
+                return 'UNKNOWN';
+            case 'Прочие списания':
+                return 'UNKNOWN';
+            case 'Оплата услуг':
+                return 'UNKNOWN';
+        }
+
+        return name;
     }
 })();
