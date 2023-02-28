@@ -89,7 +89,8 @@
                     'декабря': 12,
                 };
 
-                let match = /^(\d+)\s+(\w+)/.exec(text);
+                // "\p{L}" is "\w" for unicode
+                let match = /^(\d+)\s+(\p{L}+)/u.exec(text);
                 if (!match) {
                     throw new Error('Invalid date: ' + text);
                 }
