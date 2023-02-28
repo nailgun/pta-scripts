@@ -45,7 +45,12 @@
                 let elems = op.querySelectorAll('p');
                 let parts = [...elems].map(part => part.innerText);
 
-                if (parts.length == 3) {
+                if (parts.length == 2) {
+                    return null; // ignore
+                } else if (parts.length == 3) {
+                    if (/^заказ отчета/i.test(parts[2])) {
+                        return null; // ignore
+                    }
                     return makeSimpleTrs(parts, date, reconcilationTrs.dst);
                 } else if (parts.length == 4 && /^комиссия:/i.test(parts[3])) {
                     return makeTrsWithFee(parts, date, reconcilationTrs.dst);
@@ -54,7 +59,7 @@
                 } else {
                     throw new Error('Unknown operation: ' + op.innerText);
                 }
-            });
+            }).filter(trs => !!trs); // clear ignored
         }).flat();
 
         trsList.reverse();
@@ -85,8 +90,12 @@
         };
 
         if (sign === '-') {
+            let expAcc = standartizeExpensesAccount(parts[2]);
             trs.src = accountName;
-            trs.dst = 'expenses:' + standartizeExpensesAccount(parts[2]);
+            trs.dst = 'expenses:' + expAcc;
+            if (expAcc != parts[2]) {
+                trs.comment = parts[2];
+            }
         } else {
             trs.src = 'income:' + parts[2];
             trs.dst = accountName;
@@ -152,18 +161,28 @@
             throw new Error('Invalid document location');
         }
 
-        let match = /^\?usedResource=ct-account(%3A|:)([^&]+)/.exec(document.location.search);
+        let match = /^\?usedResource=(ct-account|card)(%3A|:)([^&]+)/.exec(document.location.search);
         if (!match) {
             throw new Error('Invalid operations filter');
         }
 
-        let accountId = match[2];
+        let accountId = match[3];
         let accountLink = document.querySelector(`a[class^="region-products-cards-"][href$="/${accountId}"]`);
         if (!accountLink) {
             throw new Error('Cant find active account');
         }
 
         let parts = accountLink.innerText.split('\n');
+
+        if (parts.length == 2) {
+            // is a card, find account
+            accountLink = accountLink.closest('ul').closest('li').querySelector('a[href^="/cta/"]');
+            if (!accountLink) {
+                throw new Error('Cant find active account');
+            }
+            parts = accountLink.innerText.split('\n');
+        }
+
         return {
             date: formatDate(new Date()),
             name: '* sber reconcilation',
@@ -221,11 +240,19 @@
         switch (name) {
             case 'Клиенту Сбербанка':
                 return 'TRANSFER';
+            case 'Перевод по СБП':
+                return 'TRANSFER';
             case 'Оплата товаров и услуг':
                 return 'UNKNOWN';
             case 'Прочие списания':
                 return 'UNKNOWN';
             case 'Оплата услуг':
+                return 'UNKNOWN';
+            case 'Оплата по QR-коду СБП':
+                return 'UNKNOWN';
+            case 'Оплата по QR коду Сбербанка':
+                return 'UNKNOWN';
+            case 'Оплата SberPay':
                 return 'UNKNOWN';
         }
 
