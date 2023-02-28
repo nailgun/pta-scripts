@@ -1,6 +1,18 @@
 (function() {
     const SUM_INDENT = 41;
 
+    function formatSum (sum, currency) {
+        if (currency && currency !== '₽') {
+            if (currency === '$' || currency === '£') {
+                sum = currency + sum;
+            } else {
+                sum += ' ' + currency;
+            }
+        }
+
+        return sum;
+    }
+
     window.PTA = {
         parseSum: text => text.replace(/,/g, '.').replace(/\s/g, ','),
 
@@ -15,21 +27,39 @@
                     text += '  ; ' + trs.srcComment;
                 }
             }
-            let sum = trs.sum;
-            if (trs.currency && trs.currency !== '₽') {
-                if (trs.currency === '$' || trs.currency === '£') {
-                    sum = trs.currency + sum;
+
+            // simple trs without splits
+            if (trs.sum) {
+                if (trs.src) {
+                    trs.src = [trs.src, null];
                 } else {
-                    sum += ' ' + trs.currency;
+                    trs.src = [];
+                }
+                trs.dst = [trs.dst, trs.sum];
+                delete trs.sum;
+            }
+
+            for (let [acc, sum] in trs.src) {
+                if (sum) {
+                    sum = formatSum(sum);
+                    text += `\n    ${acc}  `.padEnd(SUM_INDENT, ' ') + `${sum}`;
+                } else {
+                    text += `\n    ${acc}`;
                 }
             }
-            if (trs.sign) {
-                sum = trs.sign + sum;
+
+            for (let [acc, sum] in trs.dst) {
+                if (sum) {
+                    sum = formatSum(sum);
+                    if (trs.sign) {
+                        sum = trs.sign + sum;
+                    }
+                    text += `\n    ${acc}  `.padEnd(SUM_INDENT, ' ') + `${sum}`;
+                } else {
+                    text += `\n    ${acc}`;
+                }
             }
-            text += `\n    ${trs.dst}  `.padEnd(SUM_INDENT, ' ') + `${sum}`;
-            if (trs.dstComment) {
-                text += '  ; ' + trs.dstComment;
-            }
+            
             text += '\n';
             return text;
         },
