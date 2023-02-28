@@ -31,10 +31,10 @@
             return;
         }
 
-        let sections = document.querySelectorAll('[data-unit="OperationsList"] > section[class^="region-operations-"]');
+        let sections = document.querySelectorAll('[data-unit="OperationsList"] > section');
         let trsList = [...sections].map(section => {
             let date = parseDate(section.querySelector('[data-unit="Date"]').innerText);
-            let trsElmList = section.querySelectorAll('li[class^="region-operations-"]');
+            let trsElmList = section.querySelectorAll('a[mode="full"]');
             return [...trsElmList].map(op => {
                 let parts = op.innerText.split('\n\n');
                 let sumText = parts[parts.length-1];
@@ -53,7 +53,12 @@
                     sign: sign,
                 };
 
-                if (parts.length == 4) {
+                if (parts.length == 3 && parts[2].startsWith('Заказ отчета')) {
+                    return null;
+                } else if (parts.length == 3 && parts[2] == 'Клиенту Сбербанка') {
+                    trs.src = null;
+                    trs.dst = 'expenses:' + parts[0];
+                } else if (parts.length == 4) {
                     let acc = ASSETS_PREFIX + parts.slice(0, 2).join(' ');
                     if (parts[2] == 'Перевод клиенту Сбербанка') {
                         trs.src = null;
