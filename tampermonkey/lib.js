@@ -89,7 +89,7 @@
                     'декабря': 12,
                 };
 
-                let match = /^(\d+)\s+(.+),?/.exec(text);
+                let match = /^(\d+)\s+(\w+)/.exec(text);
                 if (!match) {
                     throw new Error('Invalid date: ' + text);
                 }
