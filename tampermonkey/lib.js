@@ -21,21 +21,15 @@
             if (trs.comment) {
                 text += '  ; ' + trs.comment;
             }
-            if (trs.src) {
-                text += `\n    ${trs.src}`;
-                if (trs.srcComment) {
-                    text += '  ; ' + trs.srcComment;
-                }
-            }
 
             // simple trs without splits
             if (trs.sum) {
                 if (trs.src) {
-                    trs.src = [trs.src, null];
+                    trs.src = [[trs.src, null]];
                 } else {
                     trs.src = [];
                 }
-                trs.dst = [trs.dst, trs.sum];
+                trs.dst = [[trs.dst, trs.sum]];
                 delete trs.sum;
             }
 
