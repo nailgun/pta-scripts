@@ -54,6 +54,10 @@
                     return makeSimpleTrs(parts, date, reconcilationTrs.dst);
                 } else if (parts.length == 4 && /^комиссия:/i.test(parts[3])) {
                     return makeTrsWithFee(parts, date, reconcilationTrs.dst);
+                } else if (parts.length == 4 && parts[3] == 'Капитализация по вкладу/счету') { // TODO: compare with reconcilationTrs.dst
+                    return null; // ignore
+                } else if (parts.length == 5) {
+                    return null; // ignore
                 } else if (parts.length == 6 && /^между своими счетами$/i.test(parts[5])) {
                     return makeTransferTrs(parts, date, reconcilationTrs.dst);
                 } else {
