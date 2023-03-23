@@ -23,7 +23,7 @@
             }
 
             // simple trs without splits
-            if (trs.sum) {
+            if ('sum' in trs) {
                 if (trs.src) {
                     trs.src = [[trs.src, null]];
                 } else {
