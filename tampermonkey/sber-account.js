@@ -40,7 +40,7 @@
         let sections = document.querySelectorAll('[data-unit="OperationsList"] > section');
         let trsList = [...sections].map(section => {
             let date = PTA.formatDate(PTA.parseDate(section.querySelector('[data-unit="Date"]').innerText));
-            let trsElmList = section.querySelectorAll('a[mode="full"]');
+            let trsElmList = section.querySelectorAll('a:not([title="Повторить операцию"])');
             return [...trsElmList].map(op => {
                 let elems = op.querySelectorAll('p');
                 let parts = [...elems].map(part => part.innerText);
@@ -78,22 +78,16 @@
     }
 
     function makeSimpleTrs(parts, date, accountName) {
-        let sumText = parts[1];
-        let sign = sumText[0];
-        if (sign === '+' || sign === '-') {
-            sumText = sumText.slice(1);
-        } else {
-            sign = '-';
-        }
+        let sum = parseSum(parts[1]);
 
         let trs = {
             date: date,
             name: parts[0],
-            currency: sumText[sumText.length-1],
-            sum: PTA.parseSum(sumText.slice(0, -1).trim()),
+            currency: sum.currency,
+            sum: sum.sum,
         };
 
-        if (sign === '-') {
+        if (sum.sign === '-') {
             let expAcc = standartizeExpensesAccount(parts[2]);
             trs.src = accountName;
             trs.dst = 'expenses:' + expAcc;
@@ -111,22 +105,21 @@
     function makeTrsWithFee(parts, date, accountName) {
         let trs = makeSimpleTrs(parts, date, accountName);
 
-        let match = /^комиссия:\s*(.*)\s+(.*)\s*$/i.exec(parts[3]);
+        let match = /^комиссия:\s*([\s\S]*)$/i.exec(parts[3]);
         if (!match) {
             throw new Error('Invalid fee format');
         }
 
-        let feeSum = PTA.parseSum(match[1]);
-        let feeCurrency = match[2];
+        let feeSum = parseSum(match[1]);
 
-        if (feeCurrency != trs.currency) {
+        if (feeSum.currency != trs.currency) {
             throw new Error('Fee currency mistmatch');
         }
 
         trs.src = [[accountName, null]];
         trs.dst = [
             [trs.dst, trs.sum],
-            ['expenses:bankfee', feeSum],
+            ['expenses:bankfee', feeSum.sum],
         ];
         delete trs.sum;
 
@@ -134,24 +127,18 @@
     }
 
     function makeTransferTrs(parts, date, accountName) {
-        let sumText = parts[2];
-        let sign = sumText[0];
-        if (sign === '+' || sign === '-') {
-            sumText = sumText.slice(1);
-        } else {
-            sign = '-';
-        }
+        let sum = parseSum(parts[2]);
 
         let trs = {
             date: date,
             name: parts[5],
-            currency: sumText[sumText.length-1],
-            sum: PTA.parseSum(sumText.slice(0, -1).trim()),
+            currency: sum.currency,
+            sum: sum.sum,
             src: ASSETS_PREFIX + `${parts[0]} ${parts[1]}`,
             dst: ASSETS_PREFIX + `${parts[3]} ${parts[4]}`,
         };
 
-        if (sign == '+') {
+        if (sum.sign == '+') {
             trs.dst = accountName;
         } else {
             trs.src = accountName;
@@ -238,6 +225,22 @@
         let month = (date.getMonth() + 1).toString().padStart(2, '0');
         let year = date.getFullYear();
         return `${year}-${month}-${day}`;
+    }
+
+    function parseSum(text) {
+        let parts = text.split('\n');
+        let sign = parts[0][0];
+        if (sign === '+' || sign === '-') {
+            parts[0] = parts[0].slice(1);
+        } else {
+            sign = '-';
+        }
+
+        return {
+            sign: sign,
+            currency: parts[2].trim(),
+            sum: PTA.parseSum(parts[0].trim()),
+        };
     }
 
     function standartizeExpensesAccount(name) {
