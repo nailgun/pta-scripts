@@ -22,7 +22,7 @@ def main():
 
     root = tree.getroot()
     assert root.tag == 'OFX'
-    today = datetime.date.today()
+    transactions = []
 
     for msg_set in root.iterfind('BANKMSGSRSV1'):
         for transaction_response in msg_set.iterfind('STMTTRNRS'):
@@ -30,7 +30,6 @@ def main():
                 # currency = statement_response.find('CURDEF').text
                 account_name = format_account_name(statement_response.find('BANKACCTFROM'))
                 account_name = aliases.get(account_name, account_name)
-                print(f'\n; imported statements for {account_name} @ {today}\n')
                 for transaction_list in statement_response.iterfind('BANKTRANLIST'):
                     for transaction in transaction_list.iterfind('STMTTRN'):
                         t = Transaction()
@@ -45,12 +44,19 @@ def main():
                         if trn_type == 'debit':
                             t.credit_account = account_name
                             t.debit_account = 'expenses:' + memo
+                            t.debit_account = aliases.get(t.debit_account, t.debit_account)
                             t.amount = t.amount[1:]  # remove minus sign
                         else:
                             t.credit_account = 'income:' + memo
+                            t.credit_account = aliases.get(t.credit_account, t.credit_account)
                             t.debit_account = account_name
 
-                        print(t.format())
+                        transactions.append(t)
+
+    print(f'\n; imported statements @ {datetime.date.today()}\n')
+    transactions.sort(key=lambda t: t.date+t.time)
+    for t in transactions:
+        print(t.format())
 
 
 def format_account_name(bank_acct: ET.Element):
