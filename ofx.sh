@@ -15,6 +15,7 @@ python3 "$BASEDIR/ofx.py" \
   -a 'expenses:Платная дорога=expenses:Автомобиль' \
   -a 'expenses:Фастфуд=expenses:Рестораны' \
   -a 'income:Другое=income:other' \
+  -a 'income:Проценты=income:interest' \
   -a 'expenses:Такси=expenses:Транспорт' \
   -a 'expenses:Экосистема Яндекс=expenses:other' \
   -a 'expenses:Медицина=expenses:Здоровье' \

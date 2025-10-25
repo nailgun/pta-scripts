@@ -34,6 +34,7 @@ def main():
                     for transaction in transaction_list.iterfind('STMTTRN'):
                         t = Transaction()
                         dt_posted = transaction.find('DTPOSTED').text
+                        t.timestamp = dt_posted
                         t.date = format_date(dt_posted)
                         t.time = format_time(dt_posted)
                         t.amount = format_amount(transaction.find('TRNAMT').text)
@@ -54,7 +55,7 @@ def main():
                         transactions.append(t)
 
     print(f'\n; imported statements @ {datetime.date.today()}\n')
-    transactions.sort(key=lambda t: t.date+t.time)
+    transactions.sort(key=lambda t: t.timestamp)
     for t in transactions:
         print(t.format())
 
@@ -88,6 +89,7 @@ def format_amount(ofx_amount: str):
 class Transaction:
     credit_account: str
     debit_account: str
+    timestamp: str
     date: str
     time: str
     description: str
